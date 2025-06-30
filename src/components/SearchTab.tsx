@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import VideoCard from "@/components/VideoCard";
 import { useToast } from "@/hooks/use-toast";
+import { fetchWithFallback } from "@/utils/invidiousApi";
 
 interface Video {
   id: string;
@@ -34,18 +34,11 @@ const SearchTab = () => {
 
     setLoading(true);
     try {
-      // Using Invidious API (open-source YouTube frontend)
-      const response = await fetch(
-        `https://invidious.io/api/v1/search?q=${encodeURIComponent(
-          searchQuery
-        )}&type=video&sort_by=relevance`
+      console.log('Starting search for:', searchQuery);
+      
+      const data = await fetchWithFallback(
+        `search?q=${encodeURIComponent(searchQuery)}&type=video&sort_by=relevance`
       );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch videos');
-      }
-
-      const data = await response.json();
       
       const formattedVideos: Video[] = data.map((item: any) => ({
         id: item.videoId,
@@ -66,12 +59,17 @@ const SearchTab = () => {
           title: "No results found",
           description: "Try a different search term",
         });
+      } else {
+        toast({
+          title: "Search completed",
+          description: `Found ${formattedVideos.length} videos`,
+        });
       }
     } catch (error) {
       console.error('Search error:', error);
       toast({
         title: "Search failed",
-        description: "Please try again later",
+        description: "All video sources are currently unavailable. Please try again later.",
         variant: "destructive",
       });
     } finally {

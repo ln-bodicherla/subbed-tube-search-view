@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Users, Rss } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import VideoCard from "@/components/VideoCard";
 import { useToast } from "@/hooks/use-toast";
+import { fetchWithFallback } from "@/utils/invidiousApi";
 
 interface Video {
   id: string;
@@ -50,18 +50,11 @@ const SubscriptionsTab = () => {
 
     setLoading(true);
     try {
-      // Search for channel using Invidious API
-      const response = await fetch(
-        `https://invidious.io/api/v1/search?q=${encodeURIComponent(
-          channelInput
-        )}&type=channel`
+      console.log('Searching for channel:', channelInput);
+      
+      const data = await fetchWithFallback(
+        `search?q=${encodeURIComponent(channelInput)}&type=channel`
       );
-
-      if (!response.ok) {
-        throw new Error('Failed to search channel');
-      }
-
-      const data = await response.json();
       
       if (data.length === 0) {
         toast({
@@ -104,7 +97,7 @@ const SubscriptionsTab = () => {
       console.error('Add channel error:', error);
       toast({
         title: "Failed to add channel",
-        description: "Please try again later",
+        description: "Video sources are currently unavailable. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -122,25 +115,24 @@ const SubscriptionsTab = () => {
       // Fetch recent videos from each subscribed channel
       for (const channel of channelsToLoad) {
         try {
-          const response = await fetch(
-            `https://invidious.io/api/v1/channels/${channel.id}/videos?sort_by=newest`
+          console.log('Loading videos for channel:', channel.title);
+          
+          const data = await fetchWithFallback(
+            `channels/${channel.id}/videos?sort_by=newest`
           );
 
-          if (response.ok) {
-            const data = await response.json();
-            const channelVideos: Video[] = data.slice(0, 10).map((item: any) => ({
-              id: item.videoId,
-              title: item.title,
-              thumbnail: item.videoThumbnails?.find((t: any) => t.quality === 'medium')?.url || 
-                        item.videoThumbnails?.[0]?.url || 
-                        '/placeholder.svg',
-              channelTitle: item.author,
-              publishedAt: new Date(item.published * 1000).toISOString(),
-              duration: item.lengthSeconds ? `${Math.floor(item.lengthSeconds / 60)}:${String(item.lengthSeconds % 60).padStart(2, '0')}` : undefined,
-              viewCount: item.viewCount ? item.viewCount.toLocaleString() : undefined,
-            }));
-            allVideos.push(...channelVideos);
-          }
+          const channelVideos: Video[] = data.slice(0, 10).map((item: any) => ({
+            id: item.videoId,
+            title: item.title,
+            thumbnail: item.videoThumbnails?.find((t: any) => t.quality === 'medium')?.url || 
+                      item.videoThumbnails?.[0]?.url || 
+                      '/placeholder.svg',
+            channelTitle: item.author,
+            publishedAt: new Date(item.published * 1000).toISOString(),
+            duration: item.lengthSeconds ? `${Math.floor(item.lengthSeconds / 60)}:${String(item.lengthSeconds % 60).padStart(2, '0')}` : undefined,
+            viewCount: item.viewCount ? item.viewCount.toLocaleString() : undefined,
+          }));
+          allVideos.push(...channelVideos);
         } catch (error) {
           console.error(`Error loading videos for channel ${channel.title}:`, error);
         }
@@ -150,6 +142,13 @@ const SubscriptionsTab = () => {
       allVideos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
       
       setVideos(allVideos);
+      
+      if (allVideos.length > 0) {
+        toast({
+          title: "Videos loaded",
+          description: `Loaded ${allVideos.length} videos from subscriptions`,
+        });
+      }
     } catch (error) {
       console.error('Load videos error:', error);
       toast({
