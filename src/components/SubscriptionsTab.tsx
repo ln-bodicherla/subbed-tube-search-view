@@ -26,28 +26,23 @@ const SubscriptionsTab = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState("");
   const [channelInput, setChannelInput] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load saved channels and API key from localStorage
+    // Load saved channels from localStorage
     const savedChannels = localStorage.getItem('youtube-channels');
-    const savedApiKey = localStorage.getItem('youtube-api-key');
     
     if (savedChannels) {
       setChannels(JSON.parse(savedChannels));
     }
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-    }
   }, []);
 
   const addChannel = async () => {
-    if (!channelInput.trim() || !apiKey.trim()) {
+    if (!channelInput.trim()) {
       toast({
-        title: "Missing information",
-        description: "Please enter both API key and channel name/ID",
+        title: "Channel name required",
+        description: "Please enter a channel name",
         variant: "destructive",
       });
       return;
@@ -55,20 +50,20 @@ const SubscriptionsTab = () => {
 
     setLoading(true);
     try {
-      // Search for channel by name
-      const searchResponse = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(
+      // Search for channel using Invidious API
+      const response = await fetch(
+        `https://invidious.io/api/v1/search?q=${encodeURIComponent(
           channelInput
-        )}&type=channel&maxResults=1&key=${apiKey}`
+        )}&type=channel`
       );
 
-      if (!searchResponse.ok) {
+      if (!response.ok) {
         throw new Error('Failed to search channel');
       }
 
-      const searchData = await searchResponse.json();
+      const data = await response.json();
       
-      if (searchData.items.length === 0) {
+      if (data.length === 0) {
         toast({
           title: "Channel not found",
           description: "No channel found with that name",
@@ -77,11 +72,11 @@ const SubscriptionsTab = () => {
         return;
       }
 
-      const channelData = searchData.items[0];
+      const channelData = data[0];
       const newChannel: Channel = {
-        id: channelData.id.channelId,
-        title: channelData.snippet.title,
-        thumbnail: channelData.snippet.thumbnails.default?.url || '',
+        id: channelData.authorId,
+        title: channelData.author,
+        thumbnail: channelData.authorThumbnails?.[0]?.url || '/placeholder.svg',
       };
 
       // Check if channel already exists
@@ -96,7 +91,6 @@ const SubscriptionsTab = () => {
       const updatedChannels = [...channels, newChannel];
       setChannels(updatedChannels);
       localStorage.setItem('youtube-channels', JSON.stringify(updatedChannels));
-      localStorage.setItem('youtube-api-key', apiKey);
       
       setChannelInput("");
       toast({
@@ -110,7 +104,7 @@ const SubscriptionsTab = () => {
       console.error('Add channel error:', error);
       toast({
         title: "Failed to add channel",
-        description: "Please check your API key and try again",
+        description: "Please try again later",
         variant: "destructive",
       });
     } finally {
@@ -119,7 +113,7 @@ const SubscriptionsTab = () => {
   };
 
   const loadVideos = async (channelsToLoad = channels) => {
-    if (channelsToLoad.length === 0 || !apiKey) return;
+    if (channelsToLoad.length === 0) return;
 
     setLoading(true);
     try {
@@ -127,20 +121,28 @@ const SubscriptionsTab = () => {
 
       // Fetch recent videos from each subscribed channel
       for (const channel of channelsToLoad) {
-        const response = await fetch(
-          `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channel.id}&order=date&maxResults=5&type=video&key=${apiKey}`
-        );
+        try {
+          const response = await fetch(
+            `https://invidious.io/api/v1/channels/${channel.id}/videos?sort_by=newest`
+          );
 
-        if (response.ok) {
-          const data = await response.json();
-          const channelVideos: Video[] = data.items.map((item: any) => ({
-            id: item.id.videoId,
-            title: item.snippet.title,
-            thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium?.url,
-            channelTitle: item.snippet.channelTitle,
-            publishedAt: item.snippet.publishedAt,
-          }));
-          allVideos.push(...channelVideos);
+          if (response.ok) {
+            const data = await response.json();
+            const channelVideos: Video[] = data.slice(0, 10).map((item: any) => ({
+              id: item.videoId,
+              title: item.title,
+              thumbnail: item.videoThumbnails?.find((t: any) => t.quality === 'medium')?.url || 
+                        item.videoThumbnails?.[0]?.url || 
+                        '/placeholder.svg',
+              channelTitle: item.author,
+              publishedAt: new Date(item.published * 1000).toISOString(),
+              duration: item.lengthSeconds ? `${Math.floor(item.lengthSeconds / 60)}:${String(item.lengthSeconds % 60).padStart(2, '0')}` : undefined,
+              viewCount: item.viewCount ? item.viewCount.toLocaleString() : undefined,
+            }));
+            allVideos.push(...channelVideos);
+          }
+        } catch (error) {
+          console.error(`Error loading videos for channel ${channel.title}:`, error);
         }
       }
 
@@ -180,20 +182,6 @@ const SubscriptionsTab = () => {
 
   return (
     <div className="p-4 space-y-6">
-      {/* API Key Input */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">
-          YouTube API Key
-        </label>
-        <Input
-          type="password"
-          placeholder="Enter your YouTube API key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          className="bg-white/70 backdrop-blur-sm border-gray-200"
-        />
-      </div>
-
       {/* Add Channel */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-gray-700">

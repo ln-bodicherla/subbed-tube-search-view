@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, Play } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import VideoCard from "@/components/VideoCard";
@@ -20,7 +20,6 @@ const SearchTab = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState("");
   const { toast } = useToast();
 
   const searchVideos = async () => {
@@ -33,21 +32,13 @@ const SearchTab = () => {
       return;
     }
 
-    if (!apiKey.trim()) {
-      toast({
-        title: "API Key required",
-        description: "Please enter your YouTube API key",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
     try {
+      // Using Invidious API (open-source YouTube frontend)
       const response = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=${encodeURIComponent(
+        `https://invidious.io/api/v1/search?q=${encodeURIComponent(
           searchQuery
-        )}&type=video&key=${apiKey}`
+        )}&type=video&sort_by=relevance`
       );
 
       if (!response.ok) {
@@ -56,12 +47,16 @@ const SearchTab = () => {
 
       const data = await response.json();
       
-      const formattedVideos: Video[] = data.items.map((item: any) => ({
-        id: item.id.videoId,
-        title: item.snippet.title,
-        thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium?.url,
-        channelTitle: item.snippet.channelTitle,
-        publishedAt: item.snippet.publishedAt,
+      const formattedVideos: Video[] = data.map((item: any) => ({
+        id: item.videoId,
+        title: item.title,
+        thumbnail: item.videoThumbnails?.find((t: any) => t.quality === 'medium')?.url || 
+                  item.videoThumbnails?.[0]?.url || 
+                  '/placeholder.svg',
+        channelTitle: item.author,
+        publishedAt: new Date(item.published * 1000).toISOString(),
+        duration: item.lengthSeconds ? `${Math.floor(item.lengthSeconds / 60)}:${String(item.lengthSeconds % 60).padStart(2, '0')}` : undefined,
+        viewCount: item.viewCount ? item.viewCount.toLocaleString() : undefined,
       }));
 
       setVideos(formattedVideos);
@@ -76,7 +71,7 @@ const SearchTab = () => {
       console.error('Search error:', error);
       toast({
         title: "Search failed",
-        description: "Please check your API key and try again",
+        description: "Please try again later",
         variant: "destructive",
       });
     } finally {
@@ -92,23 +87,6 @@ const SearchTab = () => {
 
   return (
     <div className="p-4 space-y-6">
-      {/* API Key Input */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">
-          YouTube API Key
-        </label>
-        <Input
-          type="password"
-          placeholder="Enter your YouTube API key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          className="bg-white/70 backdrop-blur-sm border-gray-200"
-        />
-        <p className="text-xs text-gray-500">
-          Get your API key from Google Cloud Console
-        </p>
-      </div>
-
       {/* Search Input */}
       <div className="flex gap-2">
         <div className="flex-1 relative">
