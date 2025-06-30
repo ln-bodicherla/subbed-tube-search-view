@@ -63,30 +63,25 @@ const SubscriptionsTab = () => {
         <div className="space-y-4">
           <h3 className="font-medium text-gray-900">Subscribed Channels ({channels.length})</h3>
           
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {channels.map((channel) => (
               <div
                 key={channel.id}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-gray-200/50 hover:shadow-lg transition-all duration-200"
+                className="bg-white/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 hover:shadow-lg transition-all duration-200"
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-center gap-3">
                   {channel.thumbnail && (
                     <img
                       src={channel.thumbnail}
                       alt={channel.title}
-                      className="w-16 h-16 rounded-full flex-shrink-0"
+                      className="w-12 h-12 rounded-full flex-shrink-0"
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 truncate">{channel.title}</h4>
+                    <h4 className="font-medium text-gray-900 truncate">{channel.title}</h4>
                     {channel.subscriberCount && (
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-gray-600">
                         {channel.subscriberCount} subscribers
-                      </p>
-                    )}
-                    {channel.description && (
-                      <p className="text-sm text-gray-500 mt-2 line-clamp-2">
-                        {channel.description}
                       </p>
                     )}
                   </div>

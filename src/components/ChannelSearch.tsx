@@ -54,7 +54,6 @@ const ChannelSearch = ({ onChannelAdd, existingChannelIds }: ChannelSearchProps)
         id: item.channelId || item.authorId,
         title: item.channelTitle || item.author,
         thumbnail: item.thumbnail || item.videoThumbnails?.[0]?.url || '/placeholder.svg',
-        description: item.description || '',
         subscriberCount: item.subscriberCount ? formatSubscriberCount(item.subscriberCount) : undefined,
       }));
 
@@ -105,7 +104,6 @@ const ChannelSearch = ({ onChannelAdd, existingChannelIds }: ChannelSearchProps)
     }
 
     onChannelAdd(channel);
-    // Remove from search results after adding
     setSearchResults(prev => prev.filter(c => c.id !== channel.id));
   };
 
@@ -157,9 +155,6 @@ const ChannelSearch = ({ onChannelAdd, existingChannelIds }: ChannelSearchProps)
                     <p className="text-sm text-gray-600">
                       {channel.subscriberCount ? `${channel.subscriberCount} subscribers` : 'Subscriber count not available'}
                     </p>
-                    {channel.description && (
-                      <p className="text-sm text-gray-500 truncate">{channel.description}</p>
-                    )}
                   </div>
                   <Button
                     onClick={() => addChannel(channel)}
