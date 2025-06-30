@@ -1,12 +1,13 @@
 
 import { useState } from "react";
-import { Search, Users, Rss } from "lucide-react";
+import { Search, Users, Rss, Play } from "lucide-react";
 import SearchTab from "@/components/SearchTab";
 import SubscriptionsTab from "@/components/SubscriptionsTab";
 import FeedTab from "@/components/FeedTab";
+import ShortsTab from "@/components/ShortsTab";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<'search' | 'subscriptions' | 'feed'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'subscriptions' | 'feed' | 'shorts'>('search');
 
   console.log('Index page rendering, active tab:', activeTab);
 
@@ -29,6 +30,7 @@ const Index = () => {
         {activeTab === 'search' && <SearchTab />}
         {activeTab === 'subscriptions' && <SubscriptionsTab />}
         {activeTab === 'feed' && <FeedTab />}
+        {activeTab === 'shorts' && <ShortsTab />}
       </main>
 
       {/* Bottom Navigation */}
@@ -56,6 +58,18 @@ const Index = () => {
           >
             <Rss size={20} />
             <span className="text-xs font-medium">Feed</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('shorts')}
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 ${
+              activeTab === 'shorts'
+                ? 'bg-red-50 text-red-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Play size={20} />
+            <span className="text-xs font-medium">Shorts</span>
           </button>
           
           <button

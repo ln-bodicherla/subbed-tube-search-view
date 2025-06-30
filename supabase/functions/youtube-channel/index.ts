@@ -14,8 +14,8 @@ serve(async (req) => {
   }
 
   try {
-    const { channelId, maxResults = 10 } = await req.json()
-    console.log('Channel parameters:', { channelId, maxResults })
+    const { channelId, maxResults = 10, videoType = 'all' } = await req.json()
+    console.log('Channel parameters:', { channelId, maxResults, videoType })
     
     const apiKey = Deno.env.get('YOUTUBE_API_KEY')
     if (!apiKey) {
@@ -23,9 +23,17 @@ serve(async (req) => {
       throw new Error('YouTube API key not configured')
     }
 
-    console.log('Making request to YouTube API for recent channel videos...')
-    // Get recent channel videos ordered by date (most recent first)
-    const videosUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=${maxResults}&key=${apiKey}`
+    console.log('Making request to YouTube API for channel videos...')
+    
+    // Build the search URL based on video type
+    let videosUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=${maxResults}&key=${apiKey}`
+    
+    // Add duration filter for shorts vs regular videos
+    if (videoType === 'shorts') {
+      videosUrl += '&videoDuration=short' // Videos under 4 minutes
+    } else if (videoType === 'regular') {
+      videosUrl += '&videoDuration=medium|long' // Videos 4+ minutes
+    }
     
     const response = await fetch(videosUrl)
     const data = await response.json()
@@ -37,7 +45,46 @@ serve(async (req) => {
       throw new Error(data.error?.message || 'YouTube API request failed')
     }
 
-    const transformedData = data.items?.map((item: any) => ({
+    // Filter results based on video type if API filter didn't work perfectly
+    let filteredItems = data.items || []
+    
+    if (videoType === 'shorts' || videoType === 'regular') {
+      // Get video details to check actual duration
+      const videoIds = filteredItems.map((item: any) => item.id.videoId).join(',')
+      if (videoIds) {
+        const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${apiKey}`
+        const detailsResponse = await fetch(detailsUrl)
+        const detailsData = await detailsResponse.json()
+        
+        if (detailsResponse.ok && detailsData.items) {
+          // Create a map of video durations
+          const durationMap = new Map()
+          detailsData.items.forEach((video: any) => {
+            const duration = video.contentDetails.duration
+            // Parse ISO 8601 duration (PT1M30S format)
+            const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+            const hours = parseInt(match?.[1] || '0')
+            const minutes = parseInt(match?.[2] || '0')
+            const seconds = parseInt(match?.[3] || '0')
+            const totalSeconds = hours * 3600 + minutes * 60 + seconds
+            durationMap.set(video.id, totalSeconds)
+          })
+          
+          // Filter based on duration (shorts are typically under 60 seconds)
+          filteredItems = filteredItems.filter((item: any) => {
+            const duration = durationMap.get(item.id.videoId) || 0
+            if (videoType === 'shorts') {
+              return duration <= 60 // Shorts are 60 seconds or less
+            } else if (videoType === 'regular') {
+              return duration > 60 // Regular videos are over 60 seconds
+            }
+            return true
+          })
+        }
+      }
+    }
+
+    const transformedData = filteredItems.map((item: any) => ({
       videoId: item.id.videoId,
       title: item.snippet.title,
       author: item.snippet.channelTitle,
@@ -48,9 +95,9 @@ serve(async (req) => {
       videoThumbnails: [
         { url: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url, quality: 'medium' }
       ]
-    })) || []
+    }))
 
-    console.log('Returning recent videos data:', transformedData.length, 'items')
+    console.log(`Returning ${videoType} videos data:`, transformedData.length, 'items')
 
     return new Response(
       JSON.stringify(transformedData),

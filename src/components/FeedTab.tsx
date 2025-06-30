@@ -46,10 +46,10 @@ const FeedTab = () => {
     try {
       console.log('Loading feed videos from', channels.length, 'channels');
       
-      // Fetch videos from all subscribed channels
+      // Fetch regular videos (non-shorts) from all subscribed channels
       const videoPromises = channels.map(async (channel) => {
         try {
-          const data = await getChannelVideos(channel.id, 5); // Get 5 latest from each
+          const data = await getChannelVideos(channel.id, 5, 'regular'); // Get 5 latest regular videos from each
           return data.map((item: any) => ({
             id: item.videoId,
             title: item.title,
