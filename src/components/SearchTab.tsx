@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,7 @@ const SearchTab = () => {
 
     setLoading(true);
     try {
-      console.log('Starting YouTube API search for:', searchQuery);
+      console.log('Starting YouTube API search for videos:', searchQuery);
       
       const data = await searchYouTubeVideos(searchQuery);
       
@@ -105,7 +106,7 @@ const SearchTab = () => {
       {videos.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            Search Results ({videos.length})
+            Video Results ({videos.length})
           </h2>
           <div className="grid gap-4">
             {videos.map((video) => (

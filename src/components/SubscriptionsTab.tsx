@@ -1,29 +1,20 @@
+
 import { useState, useEffect } from "react";
-import { Users, Rss } from "lucide-react";
+import { Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import VideoCard from "@/components/VideoCard";
 import { useToast } from "@/hooks/use-toast";
-import { searchYouTubeChannels, getChannelVideos } from "@/utils/youtubeApi";
-
-interface Video {
-  id: string;
-  title: string;
-  thumbnail: string;
-  channelTitle: string;
-  publishedAt: string;
-  duration?: string;
-  viewCount?: string;
-}
+import { searchYouTubeChannels } from "@/utils/youtubeApi";
 
 interface Channel {
   id: string;
   title: string;
   thumbnail: string;
+  description?: string;
+  subscriberCount?: string;
 }
 
 const SubscriptionsTab = () => {
-  const [videos, setVideos] = useState<Video[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(false);
   const [channelInput, setChannelInput] = useState("");
@@ -65,6 +56,8 @@ const SubscriptionsTab = () => {
         id: channelData.authorId,
         title: channelData.author,
         thumbnail: channelData.videoThumbnails?.[0]?.url || '/placeholder.svg',
+        description: channelData.description || '',
+        subscriberCount: channelData.subCount ? channelData.subCount.toLocaleString() : undefined,
       };
 
       if (channels.some(ch => ch.id === newChannel.id)) {
@@ -84,59 +77,10 @@ const SubscriptionsTab = () => {
         title: "Channel added",
         description: `Successfully added ${newChannel.title}`,
       });
-
-      loadVideos(updatedChannels);
     } catch (error) {
       console.error('Add channel error:', error);
       toast({
         title: "Failed to add channel",
-        description: "Please check your API configuration",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadVideos = async (channelsToLoad = channels) => {
-    if (channelsToLoad.length === 0) return;
-
-    setLoading(true);
-    try {
-      const allVideos: Video[] = [];
-
-      for (const channel of channelsToLoad) {
-        try {
-          const channelVideos = await getChannelVideos(channel.id);
-          
-          const formattedVideos: Video[] = channelVideos.map((item: any) => ({
-            id: item.videoId,
-            title: item.title,
-            thumbnail: item.videoThumbnails?.[0]?.url || '/placeholder.svg',
-            channelTitle: item.author,
-            publishedAt: new Date(item.published * 1000).toISOString(),
-            duration: item.lengthSeconds ? `${Math.floor(item.lengthSeconds / 60)}:${String(item.lengthSeconds % 60).padStart(2, '0')}` : undefined,
-            viewCount: item.viewCount ? item.viewCount.toLocaleString() : undefined,
-          }));
-          
-          allVideos.push(...formattedVideos);
-        } catch (error) {
-          console.error(`Failed to load videos for ${channel.title}:`, error);
-        }
-      }
-
-      allVideos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-      
-      setVideos(allVideos);
-      
-      toast({
-        title: "Videos loaded",
-        description: `Loaded ${allVideos.length} videos from subscriptions`,
-      });
-    } catch (error) {
-      console.error('Load videos error:', error);
-      toast({
-        title: "Failed to load videos",
         description: "Please check your API configuration",
         variant: "destructive",
       });
@@ -154,12 +98,6 @@ const SubscriptionsTab = () => {
       title: "Channel removed",
       description: "Channel removed from subscriptions",
     });
-
-    loadVideos(updatedChannels);
-  };
-
-  const refreshVideos = () => {
-    loadVideos();
   };
 
   return (
@@ -188,55 +126,44 @@ const SubscriptionsTab = () => {
 
       {/* Subscribed Channels */}
       {channels.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium text-gray-900">Subscribed Channels ({channels.length})</h3>
-            <Button 
-              onClick={refreshVideos}
-              disabled={loading}
-              variant="outline"
-              size="sm"
-            >
-              <Rss size={16} className="mr-1" />
-              Refresh
-            </Button>
-          </div>
+        <div className="space-y-4">
+          <h3 className="font-medium text-gray-900">Subscribed Channels ({channels.length})</h3>
           
-          <div className="flex flex-wrap gap-2">
+          <div className="grid gap-4">
             {channels.map((channel) => (
               <div
                 key={channel.id}
-                className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200 text-sm"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-gray-200/50 hover:shadow-lg transition-all duration-200"
               >
-                {channel.thumbnail && (
-                  <img
-                    src={channel.thumbnail}
-                    alt={channel.title}
-                    className="w-6 h-6 rounded-full"
-                  />
-                )}
-                <span className="truncate max-w-24">{channel.title}</span>
-                <button
-                  onClick={() => removeChannel(channel.id)}
-                  className="text-red-500 hover:text-red-700 ml-1"
-                >
-                  ×
-                </button>
+                <div className="flex items-start gap-4">
+                  {channel.thumbnail && (
+                    <img
+                      src={channel.thumbnail}
+                      alt={channel.title}
+                      className="w-16 h-16 rounded-full flex-shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900 truncate">{channel.title}</h4>
+                    {channel.subscriberCount && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        {channel.subscriberCount} subscribers
+                      </p>
+                    )}
+                    {channel.description && (
+                      <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+                        {channel.description}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => removeChannel(channel.id)}
+                    className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Videos */}
-      {videos.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Latest Videos ({videos.length})
-          </h2>
-          <div className="grid gap-4">
-            {videos.map((video) => (
-              <VideoCard key={`${video.channelTitle}-${video.id}`} video={video} />
             ))}
           </div>
         </div>
@@ -252,7 +179,7 @@ const SubscriptionsTab = () => {
             No subscriptions yet
           </h3>
           <p className="text-gray-500">
-            Add channels to see their latest videos here
+            Add channels to see them here
           </p>
         </div>
       )}
