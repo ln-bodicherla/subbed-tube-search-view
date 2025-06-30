@@ -55,6 +55,7 @@ const ChannelSearch = ({ onChannelAdd, existingChannelIds }: ChannelSearchProps)
         title: item.author,
         thumbnail: item.videoThumbnails?.[0]?.url || '/placeholder.svg',
         description: item.snippet?.description || '',
+        subscriberCount: item.subscriberCount ? formatSubscriberCount(item.subscriberCount) : undefined,
       }));
 
       setSearchResults(formattedChannels);
@@ -74,6 +75,16 @@ const ChannelSearch = ({ onChannelAdd, existingChannelIds }: ChannelSearchProps)
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatSubscriberCount = (count: number | string): string => {
+    const num = typeof count === 'string' ? parseInt(count) : count;
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
+    return num.toString();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -141,6 +152,9 @@ const ChannelSearch = ({ onChannelAdd, existingChannelIds }: ChannelSearchProps)
                   />
                   <div className="flex-1 min-w-0">
                     <h5 className="font-medium text-gray-900 truncate">{channel.title}</h5>
+                    {channel.subscriberCount && (
+                      <p className="text-sm text-gray-600">{channel.subscriberCount} subscribers</p>
+                    )}
                     {channel.description && (
                       <p className="text-sm text-gray-500 truncate">{channel.description}</p>
                     )}
