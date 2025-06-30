@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import VideoCard from "@/components/VideoCard";
 import { useToast } from "@/hooks/use-toast";
-import { fetchWithFallback } from "@/utils/invidiousApi";
+import { searchYouTubeVideos } from "@/utils/youtubeApi";
 
 interface Video {
   id: string;
@@ -34,11 +34,9 @@ const SearchTab = () => {
 
     setLoading(true);
     try {
-      console.log('Starting search for:', searchQuery);
+      console.log('Starting YouTube API search for:', searchQuery);
       
-      const data = await fetchWithFallback(
-        `search?q=${encodeURIComponent(searchQuery)}&type=video&sort_by=relevance`
-      );
+      const data = await searchYouTubeVideos(searchQuery);
       
       const formattedVideos: Video[] = data.map((item: any) => ({
         id: item.videoId,
@@ -54,22 +52,16 @@ const SearchTab = () => {
 
       setVideos(formattedVideos);
       
-      if (formattedVideos.length === 0) {
-        toast({
-          title: "No results found",
-          description: "Try a different search term",
-        });
-      } else {
-        toast({
-          title: "Search completed",
-          description: `Found ${formattedVideos.length} videos`,
-        });
-      }
+      toast({
+        title: "Search completed",
+        description: `Found ${formattedVideos.length} videos`,
+      });
     } catch (error) {
       console.error('Search error:', error);
       toast({
-        title: "Search completed with demo data",
-        description: "Showing sample results while we work on API connectivity",
+        title: "Search failed",
+        description: "Please check your API configuration",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);

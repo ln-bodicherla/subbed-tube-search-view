@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import VideoCard from "@/components/VideoCard";
 import { useToast } from "@/hooks/use-toast";
-import { fetchWithFallback } from "@/utils/invidiousApi";
+import { searchYouTubeChannels, getChannelVideos } from "@/utils/youtubeApi";
 
 interface Video {
   id: string;
@@ -30,9 +30,7 @@ const SubscriptionsTab = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load saved channels from localStorage
     const savedChannels = localStorage.getItem('youtube-channels');
-    
     if (savedChannels) {
       setChannels(JSON.parse(savedChannels));
     }
@@ -52,29 +50,13 @@ const SubscriptionsTab = () => {
     try {
       console.log('Searching for channel:', channelInput);
       
-      const data = await fetchWithFallback(
-        `search?q=${encodeURIComponent(channelInput)}&type=channel`
-      );
+      const data = await searchYouTubeChannels(channelInput);
       
       if (data.length === 0) {
-        // Create a demo channel if API fails
-        const newChannel: Channel = {
-          id: `demo_${Date.now()}`,
-          title: channelInput,
-          thumbnail: '/placeholder.svg',
-        };
-
-        const updatedChannels = [...channels, newChannel];
-        setChannels(updatedChannels);
-        localStorage.setItem('youtube-channels', JSON.stringify(updatedChannels));
-        
-        setChannelInput("");
         toast({
-          title: "Channel added (demo mode)",
-          description: `Added ${newChannel.title} - showing sample videos`,
+          title: "No channels found",
+          description: "Try a different search term",
         });
-
-        loadVideos(updatedChannels);
         return;
       }
 
@@ -82,10 +64,9 @@ const SubscriptionsTab = () => {
       const newChannel: Channel = {
         id: channelData.authorId,
         title: channelData.author,
-        thumbnail: channelData.authorThumbnails?.[0]?.url || '/placeholder.svg',
+        thumbnail: channelData.videoThumbnails?.[0]?.url || '/placeholder.svg',
       };
 
-      // Check if channel already exists
       if (channels.some(ch => ch.id === newChannel.id)) {
         toast({
           title: "Already subscribed",
@@ -108,8 +89,9 @@ const SubscriptionsTab = () => {
     } catch (error) {
       console.error('Add channel error:', error);
       toast({
-        title: "Channel added in demo mode",
-        description: "API unavailable, but you can still test the interface",
+        title: "Failed to add channel",
+        description: "Please check your API configuration",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -123,37 +105,40 @@ const SubscriptionsTab = () => {
     try {
       const allVideos: Video[] = [];
 
-      // Create demo videos for each channel since APIs might be unavailable
       for (const channel of channelsToLoad) {
-        const demoVideos: Video[] = Array.from({ length: 3 }, (_, index) => ({
-          id: `${channel.id}_video_${index}`,
-          title: `Latest Video ${index + 1} from ${channel.title}`,
-          thumbnail: '/placeholder.svg',
-          channelTitle: channel.title,
-          publishedAt: new Date(Date.now() - (index * 86400000)).toISOString(),
-          duration: `${Math.floor(Math.random() * 10) + 3}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`,
-          viewCount: `${Math.floor(Math.random() * 100000).toLocaleString()}`,
-        }));
-        
-        allVideos.push(...demoVideos);
+        try {
+          const channelVideos = await getChannelVideos(channel.id);
+          
+          const formattedVideos: Video[] = channelVideos.map((item: any) => ({
+            id: item.videoId,
+            title: item.title,
+            thumbnail: item.videoThumbnails?.[0]?.url || '/placeholder.svg',
+            channelTitle: item.author,
+            publishedAt: new Date(item.published * 1000).toISOString(),
+            duration: item.lengthSeconds ? `${Math.floor(item.lengthSeconds / 60)}:${String(item.lengthSeconds % 60).padStart(2, '0')}` : undefined,
+            viewCount: item.viewCount ? item.viewCount.toLocaleString() : undefined,
+          }));
+          
+          allVideos.push(...formattedVideos);
+        } catch (error) {
+          console.error(`Failed to load videos for ${channel.title}:`, error);
+        }
       }
 
-      // Sort videos by publish date (newest first)
       allVideos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
       
       setVideos(allVideos);
       
-      if (allVideos.length > 0) {
-        toast({
-          title: "Videos loaded (demo mode)",
-          description: `Showing ${allVideos.length} sample videos from subscriptions`,
-        });
-      }
+      toast({
+        title: "Videos loaded",
+        description: `Loaded ${allVideos.length} videos from subscriptions`,
+      });
     } catch (error) {
       console.error('Load videos error:', error);
       toast({
-        title: "Demo videos loaded",
-        description: "Showing sample content while APIs are being fixed",
+        title: "Failed to load videos",
+        description: "Please check your API configuration",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
