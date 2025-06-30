@@ -1,1 +1,8 @@
+
 project_id = "odvwzoxlnefjwqfkoonq"
+
+[functions.youtube-search]
+verify_jwt = false
+
+[functions.youtube-channel]
+verify_jwt = false

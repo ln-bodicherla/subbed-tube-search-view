@@ -7,25 +7,33 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log('YouTube channel function called with method:', req.method)
+  
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const { channelId, maxResults = 10 } = await req.json()
+    console.log('Channel parameters:', { channelId, maxResults })
     
     const apiKey = Deno.env.get('YOUTUBE_API_KEY')
     if (!apiKey) {
+      console.error('YouTube API key not found in environment')
       throw new Error('YouTube API key not configured')
     }
 
+    console.log('Making request to YouTube API for channel videos...')
     // Get channel videos
     const videosUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=${maxResults}&key=${apiKey}`
     
     const response = await fetch(videosUrl)
     const data = await response.json()
 
+    console.log('YouTube API response status:', response.status)
+
     if (!response.ok) {
+      console.error('YouTube API error:', data)
       throw new Error(data.error?.message || 'YouTube API request failed')
     }
 
@@ -41,6 +49,8 @@ serve(async (req) => {
         { url: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url, quality: 'medium' }
       ]
     })) || []
+
+    console.log('Returning transformed data:', transformedData.length, 'items')
 
     return new Response(
       JSON.stringify(transformedData),

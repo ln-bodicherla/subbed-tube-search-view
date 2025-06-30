@@ -7,24 +7,32 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log('YouTube search function called with method:', req.method)
+  
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const { searchQuery, type = 'video', maxResults = 25 } = await req.json()
+    console.log('Search parameters:', { searchQuery, type, maxResults })
     
     const apiKey = Deno.env.get('YOUTUBE_API_KEY')
     if (!apiKey) {
+      console.error('YouTube API key not found in environment')
       throw new Error('YouTube API key not configured')
     }
 
+    console.log('Making request to YouTube API...')
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=${type}&maxResults=${maxResults}&key=${apiKey}`
     
     const response = await fetch(searchUrl)
     const data = await response.json()
 
+    console.log('YouTube API response status:', response.status)
+    
     if (!response.ok) {
+      console.error('YouTube API error:', data)
       throw new Error(data.error?.message || 'YouTube API request failed')
     }
 
@@ -42,6 +50,8 @@ serve(async (req) => {
       ]
     })) || []
 
+    console.log('Returning transformed data:', transformedData.length, 'items')
+    
     return new Response(
       JSON.stringify(transformedData),
       {
