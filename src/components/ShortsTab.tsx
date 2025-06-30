@@ -22,14 +22,25 @@ const ShortsTab = () => {
         
         for (const channel of subscribedChannels) {
           const channelShorts = await getChannelVideos(channel.id, 10, 'shorts');
-          if (channelShorts?.items) {
-            allShorts.push(...channelShorts.items);
+          if (channelShorts && Array.isArray(channelShorts)) {
+            // Transform the data to match VideoCard expectations
+            const transformedShorts = channelShorts.map((video: any) => ({
+              id: video.videoId,
+              title: video.title,
+              thumbnail: video.videoThumbnails?.[0]?.url || '',
+              channelTitle: video.author,
+              publishedAt: new Date(video.published * 1000).toISOString(), // Convert Unix timestamp to ISO string
+              duration: video.lengthSeconds ? `${Math.floor(video.lengthSeconds / 60)}:${(video.lengthSeconds % 60).toString().padStart(2, '0')}` : undefined,
+              viewCount: video.viewCount ? video.viewCount.toLocaleString() : undefined
+            }));
+            allShorts.push(...transformedShorts);
           }
         }
         
         // Sort by publish date (most recent first)
-        allShorts.sort((a, b) => new Date(b.snippet.publishedAt).getTime() - new Date(a.snippet.publishedAt).getTime());
+        allShorts.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
         
+        console.log('Transformed shorts videos:', allShorts);
         setShorts(allShorts);
       } catch (error) {
         console.error('Error loading shorts videos:', error);
@@ -60,7 +71,7 @@ const ShortsTab = () => {
         <div className="text-center py-12">
           <div className="text-gray-400 mb-4">
             <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 002 2v8a2 2 0 002 2z" />
             </svg>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No shorts found</h3>
@@ -69,7 +80,7 @@ const ShortsTab = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {shorts.map((video) => (
-            <VideoCard key={video.id.videoId} video={video} />
+            <VideoCard key={video.id} video={video} />
           ))}
         </div>
       )}

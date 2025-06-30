@@ -22,14 +22,25 @@ const FeedTab = () => {
         
         for (const channel of subscribedChannels) {
           const channelVideos = await getChannelVideos(channel.id, 5, 'regular');
-          if (channelVideos?.items) {
-            allVideos.push(...channelVideos.items);
+          if (channelVideos && Array.isArray(channelVideos)) {
+            // Transform the data to match VideoCard expectations
+            const transformedVideos = channelVideos.map((video: any) => ({
+              id: video.videoId,
+              title: video.title,
+              thumbnail: video.videoThumbnails?.[0]?.url || '',
+              channelTitle: video.author,
+              publishedAt: new Date(video.published * 1000).toISOString(), // Convert Unix timestamp to ISO string
+              duration: video.lengthSeconds ? `${Math.floor(video.lengthSeconds / 60)}:${(video.lengthSeconds % 60).toString().padStart(2, '0')}` : undefined,
+              viewCount: video.viewCount ? video.viewCount.toLocaleString() : undefined
+            }));
+            allVideos.push(...transformedVideos);
           }
         }
         
         // Sort by publish date (most recent first)
-        allVideos.sort((a, b) => new Date(b.snippet.publishedAt).getTime() - new Date(a.snippet.publishedAt).getTime());
+        allVideos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
         
+        console.log('Transformed feed videos:', allVideos);
         setVideos(allVideos);
       } catch (error) {
         console.error('Error loading feed videos:', error);
@@ -69,7 +80,7 @@ const FeedTab = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {videos.map((video) => (
-            <VideoCard key={video.id.videoId} video={video} />
+            <VideoCard key={video.id} video={video} />
           ))}
         </div>
       )}
