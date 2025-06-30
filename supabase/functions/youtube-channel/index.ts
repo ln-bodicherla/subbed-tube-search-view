@@ -23,8 +23,8 @@ serve(async (req) => {
       throw new Error('YouTube API key not configured')
     }
 
-    console.log('Making request to YouTube API for channel videos...')
-    // Get channel videos
+    console.log('Making request to YouTube API for recent channel videos...')
+    // Get recent channel videos ordered by date (most recent first)
     const videosUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=${maxResults}&key=${apiKey}`
     
     const response = await fetch(videosUrl)
@@ -50,7 +50,7 @@ serve(async (req) => {
       ]
     })) || []
 
-    console.log('Returning transformed data:', transformedData.length, 'items')
+    console.log('Returning recent videos data:', transformedData.length, 'items')
 
     return new Response(
       JSON.stringify(transformedData),
