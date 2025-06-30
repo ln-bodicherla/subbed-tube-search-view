@@ -77,8 +77,8 @@ const SearchTab = () => {
 
   return (
     <div className="space-y-6 px-4">
-      {/* Search Input - centered below the logo */}
-      <div className="flex justify-center -mt-20 mb-12">
+      {/* Search Input - centered below the logo with reduced spacing */}
+      <div className="flex justify-center -mt-8 mb-8">
         <div className="w-full max-w-2xl">
           <div className="flex gap-2">
             <div className="flex-1 relative">
