@@ -76,30 +76,34 @@ const SearchTab = () => {
   };
 
   return (
-    <div className="p-4 space-y-6">
-      {/* Search Input */}
-      <div className="flex gap-2">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <Input
-            placeholder="Search videos..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="pl-10 bg-white/70 backdrop-blur-sm border-gray-200"
-          />
+    <div className="space-y-6 px-4">
+      {/* Search Input - positioned below the animated logo */}
+      <div className="flex justify-center -mt-16 mb-8">
+        <div className="w-full max-w-2xl">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Input
+                placeholder="Search YouTube videos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="pl-10 py-4 text-lg rounded-full border-2 border-gray-300 focus:border-red-500 bg-white shadow-lg"
+              />
+            </div>
+            <Button 
+              onClick={searchVideos}
+              disabled={loading}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-4 rounded-full"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Search size={20} />
+              )}
+            </Button>
+          </div>
         </div>
-        <Button 
-          onClick={searchVideos}
-          disabled={loading}
-          className="bg-red-600 hover:bg-red-700 text-white"
-        >
-          {loading ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <Search size={20} />
-          )}
-        </Button>
       </div>
 
       {/* Results */}

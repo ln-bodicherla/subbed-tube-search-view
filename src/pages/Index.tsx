@@ -31,22 +31,6 @@ const Index = () => {
               WFYT
             </h1>
           </div>
-          
-          {/* Search Bar - only visible on search tab */}
-          {activeTab === 'search' && (
-            <div className="w-full max-w-2xl mx-auto px-4 animate-fade-in">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search YouTube videos..."
-                  className="w-full px-6 py-4 text-lg rounded-full border-2 border-gray-300 focus:border-red-500 focus:outline-none shadow-lg bg-white"
-                />
-                <button className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 hover:bg-gray-100 rounded-full">
-                  <Search className="text-gray-600" size={24} />
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
