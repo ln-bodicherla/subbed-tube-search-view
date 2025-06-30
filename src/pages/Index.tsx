@@ -1,11 +1,12 @@
 
 import { useState } from "react";
-import { Search, Users } from "lucide-react";
+import { Search, Users, Rss } from "lucide-react";
 import SearchTab from "@/components/SearchTab";
 import SubscriptionsTab from "@/components/SubscriptionsTab";
+import FeedTab from "@/components/FeedTab";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<'search' | 'subscriptions'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'subscriptions' | 'feed'>('search');
 
   console.log('Index page rendering, active tab:', activeTab);
 
@@ -27,6 +28,7 @@ const Index = () => {
       <main className="pb-20">
         {activeTab === 'search' && <SearchTab />}
         {activeTab === 'subscriptions' && <SubscriptionsTab />}
+        {activeTab === 'feed' && <FeedTab />}
       </main>
 
       {/* Bottom Navigation */}
@@ -34,25 +36,37 @@ const Index = () => {
         <div className="flex justify-around items-center max-w-md mx-auto">
           <button
             onClick={() => setActiveTab('search')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-200 ${
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 ${
               activeTab === 'search'
                 ? 'bg-red-50 text-red-600'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            <Search size={24} />
+            <Search size={20} />
             <span className="text-xs font-medium">Search</span>
           </button>
           
           <button
+            onClick={() => setActiveTab('feed')}
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 ${
+              activeTab === 'feed'
+                ? 'bg-red-50 text-red-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Rss size={20} />
+            <span className="text-xs font-medium">Feed</span>
+          </button>
+          
+          <button
             onClick={() => setActiveTab('subscriptions')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-200 ${
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 ${
               activeTab === 'subscriptions'
                 ? 'bg-red-50 text-red-600'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            <Users size={24} />
+            <Users size={20} />
             <span className="text-xs font-medium">Subscriptions</span>
           </button>
         </div>
