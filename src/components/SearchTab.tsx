@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import VideoCard from "@/components/VideoCard";
+import VideoPlayer from "@/components/VideoPlayer";
 import { useToast } from "@/hooks/use-toast";
 import { searchYouTubeVideos } from "@/utils/youtubeApi";
 import { Play, Clock, Eye } from "lucide-react";
@@ -23,6 +23,7 @@ const SearchTab = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const { toast } = useToast();
 
   const searchVideos = async () => {
@@ -94,14 +95,27 @@ const SearchTab = () => {
     return `${Math.floor(diffInDays / 365)}y ago`;
   };
 
-  const openVideo = (videoId: string) => {
-    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+  const openVideo = (video: Video) => {
+    setSelectedVideo(video);
+  };
+
+  const closeVideo = () => {
+    setSelectedVideo(null);
   };
 
   // After search results - show compact header with search bar
   if (hasSearched && videos.length > 0) {
     return (
       <div className="min-h-screen">
+        {/* Video Player Modal */}
+        {selectedVideo && (
+          <VideoPlayer
+            videoId={selectedVideo.id}
+            title={selectedVideo.title}
+            onClose={closeVideo}
+          />
+        )}
+
         {/* Compact Header */}
         <div className="bg-white/80 backdrop-blur-lg border-b border-gray-200/50 sticky top-0 z-50 px-4 py-3">
           <div className="flex items-center gap-4 max-w-4xl mx-auto">
@@ -153,7 +167,7 @@ const SearchTab = () => {
             {videos.map((video) => (
               <div 
                 key={video.id}
-                onClick={() => openVideo(video.id)}
+                onClick={() => openVideo(video)}
                 className="flex items-center gap-4 p-3 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200/50 hover:shadow-md hover:bg-white/80 transition-all duration-200 cursor-pointer group"
               >
                 {/* Thumbnail */}
@@ -214,7 +228,7 @@ const SearchTab = () => {
   return (
     <div className="space-y-6 px-4">
       {/* Search Input - positioned directly below the logo with no gap */}
-      <div className="flex justify-center -mt-32 mb-4">
+      <div className="flex justify-center -mt-8 mb-4">
         <div className="w-full max-w-2xl">
           <div className="flex gap-2">
             <div className="flex-1 relative">
