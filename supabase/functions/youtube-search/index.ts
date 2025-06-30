@@ -36,19 +36,46 @@ serve(async (req) => {
       throw new Error(data.error?.message || 'YouTube API request failed')
     }
 
-    // Transform the data to match our expected format
-    const transformedData = data.items?.map((item: any) => ({
-      videoId: item.id.videoId || item.id.channelId,
-      title: item.snippet.title,
-      author: item.snippet.channelTitle,
-      authorId: item.snippet.channelId,
-      published: Math.floor(new Date(item.snippet.publishedAt).getTime() / 1000),
-      lengthSeconds: 0, // We'll need a separate API call for video details
-      viewCount: 0,
-      videoThumbnails: [
-        { url: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url, quality: 'medium' }
-      ]
-    })) || []
+    let transformedData = []
+
+    if (type === 'channel' && data.items) {
+      // For channels, get additional details including subscriber count
+      const channelIds = data.items.map((item: any) => item.id.channelId).filter(Boolean)
+      
+      if (channelIds.length > 0) {
+        console.log('Fetching channel details for subscriber counts...')
+        const channelDetailsUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelIds.join(',')}&key=${apiKey}`
+        
+        const channelResponse = await fetch(channelDetailsUrl)
+        const channelData = await channelResponse.json()
+        
+        if (channelResponse.ok && channelData.items) {
+          transformedData = channelData.items.map((channel: any) => ({
+            channelId: channel.id,
+            channelTitle: channel.snippet.title,
+            description: channel.snippet.description,
+            thumbnail: channel.snippet.thumbnails.medium?.url || channel.snippet.thumbnails.default?.url,
+            subscriberCount: parseInt(channel.statistics?.subscriberCount || '0'),
+            videoCount: parseInt(channel.statistics?.videoCount || '0'),
+            viewCount: parseInt(channel.statistics?.viewCount || '0'),
+          }))
+        }
+      }
+    } else {
+      // For videos, use the original transformation
+      transformedData = data.items?.map((item: any) => ({
+        videoId: item.id.videoId || item.id.channelId,
+        title: item.snippet.title,
+        author: item.snippet.channelTitle,
+        authorId: item.snippet.channelId,
+        published: Math.floor(new Date(item.snippet.publishedAt).getTime() / 1000),
+        lengthSeconds: 0, // We'll need a separate API call for video details
+        viewCount: 0,
+        videoThumbnails: [
+          { url: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url, quality: 'medium' }
+        ]
+      })) || []
+    }
 
     console.log('Returning transformed data:', transformedData.length, 'items')
     

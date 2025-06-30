@@ -51,10 +51,10 @@ const ChannelSearch = ({ onChannelAdd, existingChannelIds }: ChannelSearchProps)
       }
 
       const formattedChannels: Channel[] = data.map((item: any) => ({
-        id: item.authorId,
-        title: item.author,
-        thumbnail: item.videoThumbnails?.[0]?.url || '/placeholder.svg',
-        description: item.snippet?.description || '',
+        id: item.channelId || item.authorId,
+        title: item.channelTitle || item.author,
+        thumbnail: item.thumbnail || item.videoThumbnails?.[0]?.url || '/placeholder.svg',
+        description: item.description || '',
         subscriberCount: item.subscriberCount ? formatSubscriberCount(item.subscriberCount) : undefined,
       }));
 
@@ -79,6 +79,8 @@ const ChannelSearch = ({ onChannelAdd, existingChannelIds }: ChannelSearchProps)
 
   const formatSubscriberCount = (count: number | string): string => {
     const num = typeof count === 'string' ? parseInt(count) : count;
+    if (isNaN(num) || num === 0) return 'No subscriber info';
+    
     if (num >= 1000000) {
       return `${(num / 1000000).toFixed(1)}M`;
     } else if (num >= 1000) {
@@ -152,9 +154,9 @@ const ChannelSearch = ({ onChannelAdd, existingChannelIds }: ChannelSearchProps)
                   />
                   <div className="flex-1 min-w-0">
                     <h5 className="font-medium text-gray-900 truncate">{channel.title}</h5>
-                    {channel.subscriberCount && (
-                      <p className="text-sm text-gray-600">{channel.subscriberCount} subscribers</p>
-                    )}
+                    <p className="text-sm text-gray-600">
+                      {channel.subscriberCount ? `${channel.subscriberCount} subscribers` : 'Subscriber count not available'}
+                    </p>
                     {channel.description && (
                       <p className="text-sm text-gray-500 truncate">{channel.description}</p>
                     )}
