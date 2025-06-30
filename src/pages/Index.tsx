@@ -7,6 +7,8 @@ import SubscriptionsTab from "@/components/SubscriptionsTab";
 const Index = () => {
   const [activeTab, setActiveTab] = useState<'search' | 'subscriptions'>('search');
 
+  console.log('Index page rendering, active tab:', activeTab);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
