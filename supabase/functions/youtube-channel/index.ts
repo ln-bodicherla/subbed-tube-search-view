@@ -28,11 +28,9 @@ serve(async (req) => {
     // Build the search URL based on video type
     let videosUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=${maxResults}&key=${apiKey}`
     
-    // Add duration filter for shorts vs regular videos
+    // Add duration filter for shorts only (regular videos don't need duration filter)
     if (videoType === 'shorts') {
       videosUrl += '&videoDuration=short' // Videos under 4 minutes
-    } else if (videoType === 'regular') {
-      videosUrl += '&videoDuration=medium|long' // Videos 4+ minutes
     }
     
     const response = await fetch(videosUrl)
@@ -45,11 +43,11 @@ serve(async (req) => {
       throw new Error(data.error?.message || 'YouTube API request failed')
     }
 
-    // Filter results based on video type if API filter didn't work perfectly
+    // Get all videos first
     let filteredItems = data.items || []
     
+    // For regular videos or more precise filtering, get video details to check actual duration
     if (videoType === 'shorts' || videoType === 'regular') {
-      // Get video details to check actual duration
       const videoIds = filteredItems.map((item: any) => item.id.videoId).join(',')
       if (videoIds) {
         const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${apiKey}`
