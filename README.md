@@ -1,73 +1,78 @@
-# Welcome to your Lovable project
+# SubStream
 
-## Project info
+A minimal YouTube front end for searching videos, keeping a local list of channels, and watching videos in an embedded player, backed by Supabase Edge Functions that call the YouTube Data API. (The repository is named `subbed-tube-search-view`; the app calls itself SubStream.)
 
-**URL**: https://lovable.dev/projects/b23e0ca1-297b-49ed-8d71-3e0dab01ba1a
+## Features
 
-## How can I edit this code?
+- **Search**: search YouTube videos and open results in a modal player that uses the YouTube embed.
+- **Subscriptions**: search for channels (with subscriber and video counts) and add or remove them from a channel list stored in the browser's `localStorage`. No account is needed.
+- **Feed**: latest regular videos from channels, sorted by publish date.
+- **Shorts**: recent Shorts from channels, sorted by publish date.
+- A bottom navigation bar for switching tabs, and an animated header that shrinks when you leave the search tab.
 
-There are several ways of editing your application.
+The Feed and Shorts tabs currently use a hard-coded sample channel instead of the channels saved in the Subscriptions tab.
 
-**Use Lovable**
+## Tech stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b23e0ca1-297b-49ed-8d71-3e0dab01ba1a) and start prompting.
+- React 18, TypeScript, Vite
+- Tailwind CSS, shadcn/ui (Radix UI), lucide-react icons
+- Supabase Edge Functions (Deno) calling the YouTube Data API v3
 
-Changes made via Lovable will be committed automatically to this repo.
+The project was scaffolded with Lovable.
 
-**Use your preferred IDE**
+## Getting started
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Node.js and npm (a `bun.lockb` is also present if you prefer Bun)
+- A Supabase project and the Supabase CLI to deploy the functions
+- A YouTube Data API v3 key
 
-Follow these steps:
+### Missing frontend files
+
+The components import `searchYouTubeVideos`, `searchYouTubeChannels` and `getChannelVideos` from `src/utils/youtubeApi.ts`, but that file is not in the repository, so the frontend will not build until it is added. It is expected to call the Edge Functions below. There is also no `src/integrations/supabase/client.ts`, which you would need to create if `youtubeApi.ts` uses the Supabase client.
+
+`src/utils/invidiousApi.ts` is an earlier approach that used public Invidious and other third-party endpoints. Nothing imports it now.
+
+### Edge Functions
+
+Deploy the functions in `supabase/functions` and set one secret:
+
+- `YOUTUBE_API_KEY`
+
+Functions:
+
+- `youtube-search`: video or channel search (`searchQuery`, `type`, `maxResults`)
+- `youtube-channel`: latest videos for a channel, with an option for Shorts only (`channelId`, `maxResults`, `videoType`)
+- `youtube-channel-details`: details for a channel
+
+`supabase/config.toml` turns off JWT verification for `youtube-search` and `youtube-channel`.
+
+### Run the frontend
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm install
+npm run dev        # Vite dev server
+npm run build      # production build
+npm run build:dev  # development-mode build
+npm run preview    # preview the production build
+npm run lint
 ```
 
-**Edit a file directly in GitHub**
+## Project structure
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+src/
+├── pages/           Index (tabbed app shell) and NotFound
+├── components/      SearchTab, FeedTab, ShortsTab, SubscriptionsTab, ChannelSearch,
+│                    VideoCard, VideoPlayer, and shadcn/ui primitives in ui/
+├── utils/           invidiousApi.ts (unused earlier client)
+├── hooks/           Toast and mobile-detection hooks
+└── integrations/    Generated Supabase types
+supabase/
+└── functions/       youtube-search, youtube-channel, youtube-channel-details
+```
 
-**Use GitHub Codespaces**
+## Status
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/b23e0ca1-297b-49ed-8d71-3e0dab01ba1a) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Personal project, in progress. See the notes above about the missing `youtubeApi.ts` module and the sample channel used by the Feed and Shorts tabs.
